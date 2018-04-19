@@ -1,8 +1,7 @@
 #!/bin/sh /etc/rc.common
 # by chuacw 18 Apr 2018
-# from https://github.com/chuacw/DNS-over-HTTPS-for-OpenWRT
-# Place in /etc/init.d
 
+START=18
 cmd="/usr/sbin/dnscrypt-proxy"
 name=$(basename $(readlink -f $cmd))
 stdout_log="/var/log/$name.log"
@@ -12,11 +11,21 @@ arguments="-config /etc/config/dnscrypt-proxy.toml -logfile $stdout_log"
 start_cmd="start-stop-daemon -b -S -m -p $pid_file -x $name -- $arguments"
 stop_cmd="start-stop-daemon -K -p $pid_file"
 
-# echo start cmd is: $start_cmd
-# echo stop cmd is: $stop_cmd
+echo "dnscrypt-proxy init.d script (c) 2018 chuacw - https://github.com/chuacw"
 
-get_pid() {
-  cat "$pid_file"
+EXTRA_COMMANDS="status"
+EXTRA_HELP="	status  Shows the status"
+
+status() {
+  echo "Checking status"
+# check if the file exist, then check if /proc/PID exist
+  if [ -f $pid_file ] && [ -d /proc/$(eval "cat $pid_file") ]
+  then
+    echo "DNScrypt proxy running..."
+    eval echo "Process ID: " $(cat $pid_file)
+  else
+    echo "DNScrypt proxy not running..."
+  fi
 }
 
 start() {
@@ -28,8 +37,14 @@ start() {
 
 stop() {
   echo "Stopping DNSCrypt proxy..."
-  $stop_cmd
-  echo "See ps result below for confirmation"
-  ps | grep "$name"
-  rm $pid_file
+  if [ -f $pid_file ] && [ -d /proc/$(eval "cat $pid_file") ]
+  then
+    $stop_cmd
+    echo "See ps result below for confirmation"
+    ps | grep "$name"
+    # redirect stdout including errors
+     rm $pid_file &> /dev/null
+  else
+    echo "DNScrypt proxy not running..."
+  fi
 }
