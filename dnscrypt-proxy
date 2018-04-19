@@ -1,0 +1,33 @@
+#!/bin/sh /etc/rc.common
+# by chuacw 18 Apr 2018
+
+cmd="/usr/sbin/dnscrypt-proxy"
+name=$(basename $(readlink -f $cmd))
+stdout_log="/var/log/$name.log"
+pid_file="/var/run/$name.pid"
+stderr_log="/var/log/$name.err"
+arguments="-config /etc/config/dnscrypt-proxy.toml -logfile $stdout_log"
+start_cmd="start-stop-daemon -b -S -m -p $pid_file -x $name -- $arguments"
+stop_cmd="start-stop-daemon -K -p $pid_file"
+
+# echo start cmd is: $start_cmd
+# echo stop cmd is: $stop_cmd
+
+get_pid() {
+  cat "$pid_file"
+}
+
+start() {
+  echo "Starting DNSCrypt proxy..."
+  $start_cmd
+  echo "See ps result for confirmation"
+  ps | grep "$name"
+}
+
+stop() {
+  echo "Stopping DNSCrypt proxy..."
+  $stop_cmd
+  echo "See ps result below for confirmation"
+  ps | grep "$name"
+  rm $pid_file
+}
