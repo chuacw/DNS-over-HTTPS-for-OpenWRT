@@ -1,5 +1,7 @@
 #!/bin/sh /etc/rc.common
 # by chuacw 18 Apr 2018
+# from https://github.com/chuacw/DNS-over-HTTPS-for-OpenWRT
+# Place in /etc/init.d
 
 START=18
 cmd="/usr/sbin/dnscrypt-proxy"
@@ -30,20 +32,34 @@ status() {
 
 start() {
   echo "Starting DNSCrypt proxy..."
-  $start_cmd
-  echo "See ps result for confirmation"
-  ps | grep "$name"
+  if [ ! -f $pid_file ] 
+  then
+    $start_cmd
+    #for debugging
+    # echo "See ps result for confirmation"
+    # ps | grep "$name"
+  else
+    echo "Already running..."
+  fi
 }
 
 stop() {
-  echo "Stopping DNSCrypt proxy..."
-  if [ -f $pid_file ] && [ -d /proc/$(eval "cat $pid_file") ]
+  echo "Stopping DNSCrypt proxy"
+  if [ -f $pid_file ] 
   then
-    $stop_cmd
-    echo "See ps result below for confirmation"
-    ps | grep "$name"
+    pid=$(eval "cat $pid_file")
+    $stop_cmd &> /dev/null 
+    while [ -f $pid_file ] && [ -d /proc/$(eval "cat $pid_file") ]
+    do
+      sleep 1
+      echo -n .
+    done
+    echo "DNSCrypt proxy stopped."
+    #for debugging
+    # echo "See ps result below for confirmation"
+    # ps | grep "$name"
     # redirect stdout including errors
-     rm $pid_file &> /dev/null
+    rm $pid_file &> /dev/null
   else
     echo "DNScrypt proxy not running..."
   fi
