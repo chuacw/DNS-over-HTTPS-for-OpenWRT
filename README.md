@@ -8,4 +8,4 @@ Place the dnscrypt-proxy.toml in /etc/config
 
 Download the app from https://github.com/jedisct1/dnscrypt-proxy/ and place the executable in /usr/sbin/
 
-If you use dnsmasq, edit /etc/dnsmasq.conf so that the listening port is not conflicting with dnscrypt-proxy's. Set port=5053 for example, in /etc/dnsmasq.conf
+If you use dnsmasq, edit /etc/dnsmasq.conf so that the listening port is not conflicting with dnscrypt-proxy's. Set port=5053 for example, in /etc/dnsmasq.conf and set dhcp-option=3,x.x.x.x and dhcp-option=6,x.x.x.x where x.x.x.x is your router IP so that your router's dnscrypt-proxy is used to resolve the DNS.
