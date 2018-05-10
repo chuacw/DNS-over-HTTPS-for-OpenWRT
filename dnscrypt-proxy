@@ -1,99 +1,19 @@
 #!/bin/sh /etc/rc.common
-# init.d script by chuacw 18-24 Apr 2018
-# from https://github.com/chuacw/DNS-over-HTTPS-for-OpenWRT
-# Place in /etc/init.d
+
+USE_PROCD=1
 
 # starts before dnsmasq starts
 START=18
 # stops before networking stops
 STOP=89
-cmd="/usr/sbin/dnscrypt-proxy"
-name=$(basename $(readlink -f $cmd))
-appname="DNSCrypt proxy"
-stdout_log="/var/log/$name.log"
-pid_file="/var/run/$name.pid"
-stderr_log="/var/log/$name.err"
-arguments="-config /etc/config/dnscrypt-proxy.toml -logfile $stdout_log"
-start_cmd="start-stop-daemon -b -S -m -p $pid_file -x $name -- $arguments"
-stop_cmd="start-stop-daemon -K -p $pid_file"
-suppress_output="false"
 
-# comma separated values of additional supported commands
-EXTRA_COMMANDS="regenpid status reset"
-# each command is as follows: <tab><command><tab>descriptive text
-EXTRA_HELP="	regenpid	Regenerates the PID file if the process exists.
-	reset	Resets the process status / removes the PID file.
-	status	Shows the status
+PROG=/usr/sbin/dnscrypt-proxy
+CONFIGFILE=/etc/config/dnscrypt-proxy.toml
 
-$1 init.d script (c) 2018 chuacw - https://github.com/chuacw"
-
-reset() {
-  pid=$(eval "pgrep dnscrypt-proxy")
-  if [ -z "$pid" ]; then # if it's empty, ie, no such process exist
-	  rm $pid_file &> /dev/null
-	  if [ $suppress_output != true ]; then 
-		echo "Status reset."
-	  fi
-  else
-    echo "Can't remove PID because process still running."
-  fi
-}
-
-# Rereates the PID if the process is still running, and the PID file has been deleted
-regenpid() {
-	pid=$(eval "pgrep dnscrypt-proxy")
-	if [ ! -e $pid_file ]; then
-		if [ -n "$pid" ] && [ -e /proc/$pid ]; then
-		  echo $pid > $pid_file
-		  echo "PID regenerated."
-		else
-		  echo "Process doesn't exist."
-		fi
-	else
-	  echo "Cannot regenerate PID file as it still exists."
-	fi
-}
-
-status() {
-  echo "Checking status"
-# check if the file exist, then check if /proc/PID exist
-  if [ -f $pid_file ] && [ -d /proc/$(eval "cat $pid_file") ]; then
-    echo "$appname running..."
-    eval echo "Process ID: " $(cat $pid_file)
-  else
-    echo "$appname not running..."
-  fi
-}
-
-start() {
-  echo "Starting $appname..."
-  if [ ! -f $pid_file ]; then
-    $start_cmd
-    #for debugging
-    # echo "See ps result for confirmation"
-    # ps | grep "$name"
-  else
-    echo "$appname already running..."
-  fi
-}
-
-stop() {
-  echo "Stopping $appname"
-  if [ -f $pid_file ]; then
-    pid=$(eval "cat $pid_file")
-    $stop_cmd &> /dev/null 
-    while [ -f $pid_file ] && [ -d /proc/$(eval "cat $pid_file") ]
-    do
-      sleep 1
-      echo -n .
-    done
-    echo "$appname stopped."
-    #for debugging
-    # echo "See ps result below for confirmation"
-    # ps | grep "$name"
-    # redirect stdout including errors
-    rm $pid_file &> /dev/null
-  else
-    echo "$appname not running..."
-  fi
+start_service() {
+        procd_open_instance
+        procd_set_param command "$PROG" -config "$CONFIGFILE"
+        procd_set_param file "$CONFIGFILE"
+        procd_set_param respawn
+        procd_close_instance
 }
